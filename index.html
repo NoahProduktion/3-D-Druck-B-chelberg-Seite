@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D-Druck Studio</title>
+    <!-- Google Fonts: Inter & Space Grotesk -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* === DYNAMISCHE CORE-VARIABLEN (DARK & LIGHT) === */
+        :root {
+            --bg-main: #030712;
+            --card-bg: rgba(17, 24, 39, 0.55);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --border-hover: rgba(168, 85, 247, 0.4);
+            --text-primary: #f9fafb;
+            --text-secondary: #9ca3af;
+            --accent-glow: #a855f7;
+            --accent-glow-secondary: #ec4899;
+            --neon-shadow: rgba(168, 85, 247, 0.25);
+            --mesh-opacity: 0.15;
+            --grid-line: rgba(255, 255, 255, 0.03);
+            --nav-bg: rgba(17, 24, 39, 0.7);
+        }
+
+        @media (prefers-color-scheme: light) {
+            :root {
+                --bg-main: #f8fafc;
+                --card-bg: rgba(255, 255, 255, 0.7);
+                --border-color: rgba(0, 0, 0, 0.06);
+                --border-hover: rgba(124, 58, 237, 0.35);
+                --text-primary: #0f172a;
+                --text-secondary: #64748b;
+                --accent-glow: #7c3aed;
+                --accent-glow-secondary: #db2777;
+                --neon-shadow: rgba(124, 58, 237, 0.15);
+                --mesh-opacity: 0.25;
+                --grid-line: rgba(0, 0, 0, 0.03);
+                --nav-bg: rgba(255, 255, 255, 0.7);
+            }
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+            position: relative;
+            transition: background-color 0.5s ease, color 0.5s ease;
+        }
+
+        /* === ANIMIERTER HINTERGRUND === */
+        .ambient-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -2;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(100px);
+            opacity: var(--mesh-opacity);
+            animation: orbFloat 20s infinite alternate ease-in-out;
+        }
+
+        .orb-1 { width: 500px; height: 500px; background: var(--accent-glow); top: -10%; left: -10%; }
+        .orb-2 { width: 600px; height: 600px; background: var(--accent-glow-secondary); bottom: -20%; right: -10%; animation-delay: -7s; }
+
+        .grid-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background-image: 
+                linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+                linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
+            background-size: 50px 50px;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        @keyframes orbFloat {
+            0% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(120px, 80px) scale(1.15); }
+            100% { transform: translate(-80px, 150px) scale(0.9); }
+        }
+
+        /* === HEADER & NAVIGATION === */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 18px 50px;
+            background: var(--nav-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-brand h1 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.15rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, var(--text-primary), var(--accent-glow));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-transform: uppercase;
+        }
+
+        .header-brand p {
+            font-size: 0.72rem;
+            color: var(--text-secondary);
+            letter-spacing: 0.5px;
+        }
+
+        nav {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(0, 0, 0, 0.05);
+            padding: 4px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+        }
+
+        .nav-btn {
+            background: transparent;
+            color: var(--text-secondary);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .nav-btn:hover {
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .nav-btn.active {
+            color: var(--text-primary);
+            background: var(--card-bg);
+            box-shadow: 0 4px 15px var(--neon-shadow);
+            border: 1px solid var(--border-hover);
+        }
+
+        /* === CONTENT AREA === */
+        main {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 50px 20px;
+        }
+
+        .tab-content {
+            display: none;
+            width: 100%;
+            max-width: 900px;
+            perspective: 1000px;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: futuristicEntrance 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes futuristicEntrance {
+            from {
+                opacity: 0;
+                transform: translateY(25px) rotateX(-5deg) scale(0.96);
+                filter: blur(8px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) rotateX(0deg) scale(1);
+                filter: blur(0px);
+            }
+        }
+
+        .glass-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.1);
+            transition: all 0.4s ease;
+        }
+
+        .glass-card:hover {
+            border-color: var(--border-hover);
+            box-shadow: 0 20px 40px var(--neon-shadow);
+            transform: translateY(-3px);
+        }
+
+        /* ÜBER MICH */
+        .about-grid {
+            display: grid;
+            grid-template-columns: 260px 1fr;
+            gap: 35px;
+            align-items: center;
+        }
+
+        .img-wrapper {
+            position: relative;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .img-wrapper img {
+            width: 100%;
+            height: 260px;
+            object-fit: cover;
+            display: block;
+            transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .img-wrapper:hover img {
+            transform: scale(1.08) rotate(1deg);
+        }
+
+        /* DRUCKER */
+        .printer-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+            gap: 25px;
+        }
+
+        .printer-card {
+            display: flex;
+            flex-direction: column;
+            padding: 30px;
+        }
+
+        .printer-card .img-wrapper {
+            margin-bottom: 25px;
+        }
+
+        .printer-card .img-wrapper img {
+            height: 220px;
+        }
+
+        .printer-card h3 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.3rem;
+            margin-bottom: 12px;
+            color: var(--text-primary);
+        }
+
+        .specs-list { list-style: none; }
+        .specs-list li {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .specs-list li::before {
+            content: '⚡';
+            font-size: 0.75rem;
+            color: var(--accent-glow);
+        }
+
+        /* DRUCKAUFTRAG */
+        .order-content {
+            text-align: center;
+            max-width: 650px;
+            margin: 0 auto;
+        }
+
+        .order-content h2 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 2rem;
+            margin-bottom: 15px;
+        }
+
+        .order-content p {
+            color: var(--text-secondary);
+            line-height: 1.7;
+            margin-bottom: 35px;
+            font-size: 1rem;
+        }
+
+        .btn-action-large {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            width: 100%;
+            max-width: 380px;
+            padding: 18px 36px;
+            border-radius: 50px;
+            background: linear-gradient(135deg, var(--accent-glow), var(--accent-glow-secondary));
+            color: #ffffff;
+            font-size: 1.05rem;
+            font-weight: 700;
+            text-decoration: none;
+            box-shadow: 0 10px 30px var(--neon-shadow);
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-action-large:hover {
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: 0 15px 40px var(--neon-shadow);
+        }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            border-top: 1px solid var(--border-color);
+            background: var(--nav-bg);
+            backdrop-filter: blur(10px);
+        }
+
+        @media (max-width: 768px) {
+            header { flex-direction: column; gap: 15px; padding: 15px 20px; }
+            .about-grid, .printer-grid { grid-template-columns: 1fr; }
+            .glass-card { padding: 25px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ANIMIERTER HINTERGRUND -->
+    <div class="ambient-bg">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+    </div>
+    <div class="grid-overlay"></div>
+
+    <!-- HEADER / NAVIGATION -->
+    <header>
+        <div class="header-brand">
+            <h1 id="txt-header-title"></h1>
+            <p id="txt-header-subtitle"></p>
+        </div>
+
+        <nav>
+            <button class="nav-btn active" id="btn-nav-1" onclick="switchTab('about', this)"></button>
+            <button class="nav-btn" id="btn-nav-2" onclick="switchTab('printers', this)"></button>
+            <button class="nav-btn" id="btn-nav-3" onclick="switchTab('order', this)"></button>
+        </nav>
+    </header>
+
+    <!-- INHALTE (TABS) -->
+    <main>
+
+        <!-- TAB 1: ÜBER MICH -->
+        <section id="about" class="tab-content active">
+            <div class="glass-card about-grid">
+                <div class="img-wrapper">
+                    <img id="img-about" src="" alt="Profilbild">
+                </div>
+                <div>
+                    <h2 id="txt-about-title" style="font-family: 'Space Grotesk', sans-serif; font-size: 1.8rem; margin-bottom: 15px;"></h2>
+                    <p id="txt-about-text" style="color: var(--text-secondary); line-height: 1.7;"></p>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 2: MEINE 3D-DRUCKER -->
+        <section id="printers" class="tab-content">
+            <div class="printer-grid">
+                
+                <!-- DRUCKER 1 -->
+                <div class="glass-card printer-card">
+                    <div class="img-wrapper">
+                        <img id="img-printer1" src="" alt="Drucker 1">
+                    </div>
+                    <h3 id="txt-p1-title"></h3>
+                    <ul class="specs-list">
+                        <li id="txt-p1-type"></li>
+                        <li id="txt-p1-size"></li>
+                        <li id="txt-p1-materials"></li>
+                    </ul>
+                </div>
+
+                <!-- DRUCKER 2 -->
+                <div class="glass-card printer-card">
+                    <div class="img-wrapper">
+                        <img id="img-printer2" src="" alt="Drucker 2">
+                    </div>
+                    <h3 id="txt-p2-title"></h3>
+                    <ul class="specs-list">
+                        <li id="txt-p2-type"></li>
+                        <li id="txt-p2-size"></li>
+                        <li id="txt-p2-materials"></li>
+                    </ul>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- TAB 3: DRUCKAUFTRAG SENDEN -->
+        <section id="order" class="tab-content">
+            <div class="glass-card order-content">
+                <h2 id="txt-order-title"></h2>
+                <p id="txt-order-text"></p>
+
+                <!-- DER GROSSE DRUCKAUFTRAG BUTTON -->
+                <a id="link-google-form" href="#" target="_blank" class="btn-action-large"></a>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer>
+        <p id="txt-footer">&copy; 2026 – Gehostet via GitHub Pages</p>
+    </footer>
+
+
+    
+<script>
+        const MEINE_SEITEN_INHALTE = {
+
+            // --- HEADER / LOGO OBEN LINKS ---
+            "HAUPT_UEBERSCHRIFT": "Noah Produktion 3-D Druck",
+            "UNTER_UEBERSCHRIFT": "Additive Fertigung & Design",
+
+            // --- NAVIGATIONSTEKSTE (DIE KNÖPFE OBEN) ---
+            "KNOPF_1_TEXT": "Über mich",
+            "KNOPF_2_TEXT": "Meine 3D-Drucker",
+            "KNOPF_3_TEXT": "Druckauftrag senden",
+
+            // --- TAB 1: ÜBER MICH ---
+            "UEBER_MICH_BILD": "me.jpg",
+            "UEBER_MICH_UEBERSCHRIFT": "Hi, Ich bin Noah",
+            "UEBER_MICH_TEXT": "Willkommen auf meiner 3-D Druck seite! Ich begeistere mich seit ein paar Jahren für additive Fertigung mit dem 3-D Drucker! Ansonsten programmire ich an meinem eigenen Browser namens Nooah. Und experimentire mit virtuellen Windowsinstallertionen.",
+
+            // --- TAB 2: DRUCKER 1 ---
+            "DRUCKER_1_BILD": "Ultimakercura2plus.jpg",
+            "DRUCKER_1_NAME": "Ultimaker 2+",
+            "DRUCKER_1_TYP": "Bauraum: 223 mm x 223 mm x 205 mm",
+            "DRUCKER_1_BAURAUM": "Drucktechnologie: FDM (Fused Deposition Modeling)",
+            "DRUCKER_1_MATERIALIEN": "Baujahr: 2016",
+
+            // --- TAB 2: DRUCKER 2 ---
+            "DRUCKER_2_BILD": "Ender3.jpg",
+            "DRUCKER_2_NAME": "Ender 3 v2",
+            "DRUCKER_2_TYP": "Bauraum: 220 mm x 220 mm x 250 mm",
+            "DRUCKER_2_BAURAUM": "Drucktechnologie: FDM (Fused Deposition Modeling)",
+            "DRUCKER_2_MATERIALIEN": "Baujahr: 2020",
+
+            // --- TAB 3: DRUCKAUFTRAG SENDEN ---
+            "DRUCKAUFTRAG_UEBERSCHRIFT": "Druckauftrag senden",
+            "DRUCKAUFTRAG_TEXT": "Du wohnst in Büchelberg und hast eine Idee, die du umsetzen möchtest oder sogar fertig konstruiertes 3D-Modell (z. B. als .STL oder .3MF Datei) aber keinen Drucker? Dann füll folgendes Fomular aus und nehme mit mir Kontakt auf, um deine Idee zu verwirklichen!",
+            "BUTTON_BESCHRIFTUNG": "Zum Fomular",
+            "GOOGLE_FORMULAR_LINK": "https://docs.google.com/forms/d/e/1FAIpQLSe14IRHvGtI6sDUYkrdPNzeBTv2ZaYnUoPqnV8SGIq0f65OsQ/viewform?usp=publish-editor",
+
+            // --- FOOTER ---
+            "FOOTER_TEXT": "© 2026 – Noah"
+        };
+
+
+
+
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const c = MEINE_SEITEN_INHALTE;
+
+            // Header
+            document.getElementById('txt-header-title').innerText = c.HAUPT_UEBERSCHRIFT;
+            document.getElementById('txt-header-subtitle').innerText = c.UNTER_UEBERSCHRIFT;
+
+            // Nav Knöpfe
+            document.getElementById('btn-nav-1').innerText = c.KNOPF_1_TEXT;
+            document.getElementById('btn-nav-2').innerText = c.KNOPF_2_TEXT;
+            document.getElementById('btn-nav-3').innerText = c.KNOPF_3_TEXT;
+
+            // Über mich
+            document.getElementById('img-about').src = c.UEBER_MICH_BILD;
+            document.getElementById('txt-about-title').innerText = c.UEBER_MICH_UEBERSCHRIFT;
+            document.getElementById('txt-about-text').innerText = c.UEBER_MICH_TEXT;
+
+            // Drucker 1
+            document.getElementById('img-printer1').src = c.DRUCKER_1_BILD;
+            document.getElementById('txt-p1-title').innerText = c.DRUCKER_1_NAME;
+            document.getElementById('txt-p1-type').innerText = c.DRUCKER_1_TYP;
+            document.getElementById('txt-p1-size').innerText = c.DRUCKER_1_BAURAUM;
+            document.getElementById('txt-p1-materials').innerText = c.DRUCKER_1_MATERIALIEN;
+
+            // Drucker 2
+            document.getElementById('img-printer2').src = c.DRUCKER_2_BILD;
+            document.getElementById('txt-p2-title').innerText = c.DRUCKER_2_NAME;
+            document.getElementById('txt-p2-type').innerText = c.DRUCKER_2_TYP;
+            document.getElementById('txt-p2-size').innerText = c.DRUCKER_2_BAURAUM;
+            document.getElementById('txt-p2-materials').innerText = c.DRUCKER_2_MATERIALIEN;
+
+            // Druckauftrag
+            document.getElementById('txt-order-title').innerText = c.DRUCKAUFTRAG_UEBERSCHRIFT;
+            document.getElementById('txt-order-text').innerText = c.DRUCKAUFTRAG_TEXT;
+            
+            const btnLink = document.getElementById('link-google-form');
+            btnLink.innerText = c.BUTTON_BESCHRIFTUNG;
+            btnLink.href = c.GOOGLE_FORMULAR_LINK;
+
+            // Footer
+            document.getElementById('txt-footer').innerText = c.FOOTER_TEXT;
+        });
+
+        // Tab Switcher Funktion
+        function switchTab(tabId, element) {
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+
+            document.getElementById(tabId).classList.add('active');
+            element.classList.add('active');
+        }
+    </script>
+</body>
+</html>
