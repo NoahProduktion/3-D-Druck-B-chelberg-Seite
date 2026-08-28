@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D-Druck Studio</title>
+    <title id="tab-title">3D-Druck Studio</title>
     <!-- Google Fonts: Inter & Space Grotesk -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -218,7 +218,7 @@
             transform: translateY(-3px);
         }
 
-        /* ÜBER MICH */
+        /* ÜBER MICH & DUAL IMAGE HOVER EFFECT */
         .about-grid {
             display: grid;
             grid-template-columns: 260px 1fr;
@@ -231,14 +231,41 @@
             border-radius: 16px;
             overflow: hidden;
             box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            height: 260px;
+            width: 100%;
         }
 
         .img-wrapper img {
             width: 100%;
-            height: 260px;
+            height: 100%;
             object-fit: cover;
             display: block;
-            transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+            transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease;
+        }
+
+        /* Overlay Bildeffekt für Über mich */
+        .img-wrapper-dual {
+            position: relative;
+        }
+
+        .img-wrapper-dual img.img-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        .img-wrapper-dual img.img-fg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 2;
+            opacity: 1;
+        }
+
+        /* Hover-Verhalten: Vordergrund auf 50% Transparenz */
+        .img-wrapper-dual:hover img.img-fg {
+            opacity: 0.5;
         }
 
         .img-wrapper:hover img {
@@ -260,9 +287,6 @@
 
         .printer-card .img-wrapper {
             margin-bottom: 25px;
-        }
-
-        .printer-card .img-wrapper img {
             height: 220px;
         }
 
@@ -379,8 +403,11 @@
         <!-- TAB 1: ÜBER MICH -->
         <section id="about" class="tab-content active">
             <div class="glass-card about-grid">
-                <div class="img-wrapper">
-                    <img id="img-about" src="" alt="Profilbild">
+                <div class="img-wrapper img-wrapper-dual">
+                    <!-- Hintergrundbild (wird beim Hover durchschimmern) -->
+                    <img id="img-about-bg" class="img-bg" src="" alt="Hintergrundbild">
+                    <!-- Vordergrundbild (wird beim Hover zu 50% transparent) -->
+                    <img id="img-about-fg" class="img-fg" src="" alt="Vordergrundbild">
                 </div>
                 <div>
                     <h2 id="txt-about-title" style="font-family: 'Space Grotesk', sans-serif; font-size: 1.8rem; margin-bottom: 15px;"></h2>
@@ -440,10 +467,11 @@
         <p id="txt-footer">&copy; 2026 – Gehostet via GitHub Pages</p>
     </footer>
 
-
-    
-<script>
+    <script>
         const MEINE_SEITEN_INHALTE = {
+
+            // --- BROWSER TAB TITEL ---
+            "TAB_TITEL": "3D-Druck Studio",
 
             // --- HEADER / LOGO OBEN LINKS ---
             "HAUPT_UEBERSCHRIFT": "Noah Produktion 3D-Druck",
@@ -454,10 +482,11 @@
             "KNOPF_2_TEXT": "Meine 3D-Drucker",
             "KNOPF_3_TEXT": "Druckauftrag senden",
 
-            // --- TAB 1: ÜBER MICH ---
-            "UEBER_MICH_BILD": "me.jpg",
+            // --- TAB 1: ÜBER MICH BILDER ---
+            "UEBER_MICH_BILD_BACKGROUND": "me-bg.jpg", // Hinteres Bild
+            "UEBER_MICH_BILD_FOREGROUND": "me.jpg",    // Vorderes Bild
             "UEBER_MICH_UEBERSCHRIFT": "Hi, ich bin Noah!",
-            "UEBER_MICH_TEXT": "Willkommen auf meiner 3D-Druck-Seite! Ich begeistere mich seit ein paar Jahren für additive Fertigung mit dem 3D-Drucker. Ansonsten programmiere ich an meinem eigenen Browser namens Nooah und experimentiere mit virtuellen Windowsinstallationen.",
+            "UEBER_MICH_TEXT": "Willkommen auf meiner 3D-Druck-Seite! Ich begeastere mich seit ein paar Jahren für additive Fertigung mit dem 3D-Drucker. Ansonsten programmiere ich an meinem eigenen Browser namens Nooah und experimentiere mit virtuellen Windowsinstallationen.",
 
             // --- TAB 2: DRUCKER 1 ---
             "DRUCKER_1_BILD": "Ultimakercura2plus.jpg",
@@ -483,12 +512,11 @@
             "FOOTER_TEXT": "© 2026 – Noah"
         };
 
-
-
-
-
         document.addEventListener("DOMContentLoaded", () => {
             const c = MEINE_SEITEN_INHALTE;
+
+            // Browser Tab Titel
+            document.title = c.TAB_TITEL || "3D-Druck Studio";
 
             // Header
             document.getElementById('txt-header-title').innerText = c.HAUPT_UEBERSCHRIFT;
@@ -499,8 +527,9 @@
             document.getElementById('btn-nav-2').innerText = c.KNOPF_2_TEXT;
             document.getElementById('btn-nav-3').innerText = c.KNOPF_3_TEXT;
 
-            // Über mich
-            document.getElementById('img-about').src = c.UEBER_MICH_BILD;
+            // Über mich (Beide Bilder setzen)
+            document.getElementById('img-about-bg').src = c.UEBER_MICH_BILD_BACKGROUND;
+            document.getElementById('img-about-fg').src = c.UEBER_MICH_BILD_FOREGROUND;
             document.getElementById('txt-about-title').innerText = c.UEBER_MICH_UEBERSCHRIFT;
             document.getElementById('txt-about-text').innerText = c.UEBER_MICH_TEXT;
 
